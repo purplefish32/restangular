@@ -1,5 +1,5 @@
-(function() {
-
+var _ = require('lodash')
+var angular = require('angular')
 var restangular = angular.module('restangular', []);
 
 restangular.provider('Restangular', function() {
@@ -1347,4 +1347,4 @@ restangular.provider('Restangular', function() {
   }];
 });
 
-})();
+module.exports = 'restangular';
