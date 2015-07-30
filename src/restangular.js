@@ -1,4 +1,4 @@
-var _ = require('lodash')
+var _ = require('underscore')
 var angular = require('angular')
 var restangular = angular.module('restangular', []);
 
