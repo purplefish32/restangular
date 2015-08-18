@@ -1,7 +1,7 @@
 {
   "name": "angular-restangular",
   "description": "Restful Resources service for AngularJS apps",
-  "version": "1.5.1",
+  "version": "1.6.0",
   "filename": "restangular.min.js",
   "main": "./src/restangular.js",
   "homepage": "https://github.com/mgonto/restangular",
@@ -28,9 +28,6 @@
       "website": "http://gon.to/"
     }
   ],
-  "dependencies": {
-    "underscore": "^1.8.3"
-  },
   "devDependencies": {
     "grunt-cli": ">= 0.1.7",
     "grunt-contrib-concat": "*",
@@ -39,17 +36,17 @@
     "grunt-bower": "*",
     "grunt-bower-task": "*",
     "grunt-karma": "latest",
-    "grunt-conventional-changelog": "0.0.12",
+    "grunt-conventional-changelog": "4.1.0",
     "grunt-zip": "*",
-    "karma": "~0.12.1",
-    "karma-mocha-reporter": "0.2.8",
-    "karma-jasmine": "~0.1.5",
-    "karma-chrome-launcher": "~0.1.2",
-    "karma-phantomjs-launcher": "~0.1.2",
+    "karma": "~0.13.9",
+    "karma-mocha-reporter": "1.1.1",
+    "karma-jasmine": "~0.3.6",
+    "karma-chrome-launcher": "~0.2.0",
+    "karma-phantomjs-launcher": "~0.2.1",
     "karma-firefox-launcher": "~0.1.3"
   },
   "scripts": {
-    "test": "grunt test --verbose"
+    "test": "karma start"
   },
   "license": "MIT"
 }

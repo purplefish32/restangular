@@ -1,6 +1,112 @@
-var _ = require('underscore')
 var angular = require('angular')
 var restangular = angular.module('restangular', []);
+
+if (!Array.prototype.find) {
+  Array.prototype.find = function(predicate) {
+    if (this === null) {
+      throw new TypeError('Array.prototype.find called on null or undefined');
+    }
+    if (typeof predicate !== 'function') {
+      throw new TypeError('predicate must be a function');
+    }
+    var list = Object(this);
+    var length = list.length >>> 0;
+    var thisArg = arguments[1];
+    var value;
+
+    for (var i = 0; i < length; i++) {
+      value = list[i];
+      if (predicate.call(thisArg, value, i, list)) {
+        return value;
+      }
+    }
+    return undefined;
+  };
+}
+
+function _isBoolean(obj) {
+  return obj === true || obj === false || toString.call(obj) == '[object Boolean]';
+};
+
+function _isEmpty(value) {
+  if (angular.isArray(value)) {
+    return value.length === 0;
+  }
+
+  if (angular.isObject(value)) {
+    return Object.keys(value).length === 0;
+  }
+
+  if (angular.isString(value)) {
+    return value === '';
+  }
+
+  return false;
+}
+
+function _initial(array) {
+  return array.slice(0, array.length - 1)
+}
+
+function _last(array) {
+  return array[array.length - 1]
+}
+
+function _union(x, y) {
+  var obj = {};
+  for (var i = x.length-1; i >= 0; -- i)
+    obj[x[i]] = x[i];
+  for (var i = y.length-1; i >= 0; -- i)
+    obj[y[i]] = y[i];
+  var res = []
+  for (var k in obj) {
+    if (obj.hasOwnProperty(k))  // <-- optional
+      res.push(obj[k]);
+  }
+  return res;
+}
+
+function _values(obj) {
+  return Object.keys(obj).map(function(key) {
+    return obj[key]
+  });
+}
+
+function _keys(obj) {
+  return Object.keys(obj);
+}
+
+function _pick(obj, keys) {
+  var result = {};
+
+  keys.forEach(function(key) {
+    result[key] = obj[key];
+  });
+
+  return result;
+}
+
+function _omit(object, keys) {
+  var result = angular.copy(object);
+
+  keys.forEach(function(key) {
+    delete result[key];
+  });
+
+  return result;
+}
+
+function _every(arr, predicate) {
+  return arr.every(predicate);
+}
+
+function _contains(array, value) {
+  return array.indexOf(value) !== -1;
+}
+
+function _bind(func, context) {
+  return Function.prototype.bind.apply(func, Array.prototype.slice.call(arguments, 1));
+}
 
 restangular.provider('Restangular', function() {
   // Configuration
@@ -13,24 +119,24 @@ restangular.provider('Restangular', function() {
      */
     var safeMethods= ['get', 'head', 'options', 'trace', 'getlist'];
     config.isSafe = function(operation) {
-      return _.contains(safeMethods, operation.toLowerCase());
+      return _contains(safeMethods, operation.toLowerCase());
     };
 
     var absolutePattern = /^https?:\/\//i;
     config.isAbsoluteUrl = function(string) {
-      return _.isUndefined(config.absoluteUrl) || _.isNull(config.absoluteUrl) ?
-              string && absolutePattern.test(string) :
-              config.absoluteUrl;
+      return angular.isUndefined(config.absoluteUrl) || config.absoluteUrl === null ?
+      string && absolutePattern.test(string) :
+        config.absoluteUrl;
     };
 
-    config.absoluteUrl = _.isUndefined(config.absoluteUrl) ? true : config.absoluteUrl;
+    config.absoluteUrl = angular.isUndefined(config.absoluteUrl) ? true : config.absoluteUrl;
     object.setSelfLinkAbsoluteUrl = function(value) {
       config.absoluteUrl = value;
     };
     /**
      * This is the BaseURL to be used with Restangular
      */
-    config.baseUrl = _.isUndefined(config.baseUrl) ? '' : config.baseUrl;
+    config.baseUrl = angular.isUndefined(config.baseUrl) ? '' : config.baseUrl;
     object.setBaseUrl = function(newBaseUrl) {
       config.baseUrl = /\/$/.test(newBaseUrl) ?
         newBaseUrl.substring(0, newBaseUrl.length-1) :
@@ -49,7 +155,7 @@ restangular.provider('Restangular', function() {
 
     /**
      * Some default $http parameter to be used in EVERY call
-    **/
+     **/
     config.defaultHttpFields = config.defaultHttpFields || {};
     object.setDefaultHttpFields = function(values) {
       config.defaultHttpFields = values;
@@ -57,27 +163,27 @@ restangular.provider('Restangular', function() {
     };
 
     config.withHttpValues = function(httpLocalConfig, obj) {
-      return _.defaults(obj, httpLocalConfig, config.defaultHttpFields);
+      return angular.extend(obj, httpLocalConfig, config.defaultHttpFields);
     };
 
-    config.encodeIds = _.isUndefined(config.encodeIds) ? true : config.encodeIds;
+    config.encodeIds = angular.isUndefined(config.encodeIds) ? true : config.encodeIds;
     object.setEncodeIds = function(encode) {
       config.encodeIds = encode;
     };
 
     config.defaultRequestParams = config.defaultRequestParams || {
-      get: {},
-      post: {},
-      put: {},
-      remove: {},
-      common: {}
-    };
+        get: {},
+        post: {},
+        put: {},
+        remove: {},
+        common: {}
+      };
 
     object.setDefaultRequestParams = function(param1, param2) {
       var methods = [],
-          params = param2 || param1;
-      if (!_.isUndefined(param2)) {
-        if (_.isArray(param1)) {
+        params = param2 || param1;
+      if (!angular.isUndefined(param2)) {
+        if (angular.isArray(param1)) {
           methods = param1;
         } else {
           methods.push(param1);
@@ -86,7 +192,7 @@ restangular.provider('Restangular', function() {
         methods.push('common');
       }
 
-      _.each(methods, function (method) {
+      angular.forEach(methods, function (method) {
         config.defaultRequestParams[method] = params;
       });
       return this;
@@ -108,7 +214,7 @@ restangular.provider('Restangular', function() {
      **/
     config.methodOverriders = config.methodOverriders || [];
     object.setMethodOverriders = function(values) {
-      var overriders = _.extend([], values);
+      var overriders = angular.extend([], values);
       if (config.isOverridenMethod('delete', overriders)) {
         overriders.push('remove');
       }
@@ -116,24 +222,24 @@ restangular.provider('Restangular', function() {
       return this;
     };
 
-    config.jsonp = _.isUndefined(config.jsonp) ? false : config.jsonp;
+    config.jsonp = angular.isUndefined(config.jsonp) ? false : config.jsonp;
     object.setJsonp = function(active) {
       config.jsonp = active;
     };
 
     config.isOverridenMethod = function(method, values) {
       var search = values || config.methodOverriders;
-      return !_.isUndefined(_.find(search, function(one) {
+      return !angular.isUndefined(search.find(function(one) {
         return one.toLowerCase() === method.toLowerCase();
       }));
     };
 
     /**
      * Sets the URL creator type. For now, only Path is created. In the future we'll have queryParams
-    **/
+     **/
     config.urlCreator = config.urlCreator || 'path';
     object.setUrlCreator = function(name) {
-      if (!_.has(config.urlCreatorFactory, name)) {
+      if (!config.urlCreatorFactory.hasOwnProperty(name)) {
         throw new Error('URL Path selected isn\'t valid');
       }
 
@@ -152,58 +258,58 @@ restangular.provider('Restangular', function() {
      *  the field values will be id, route and parentResource respectively
      */
     config.restangularFields = config.restangularFields || {
-      id: 'id',
-      route: 'route',
-      parentResource: 'parentResource',
-      restangularCollection: 'restangularCollection',
-      cannonicalId: '__cannonicalId',
-      etag: 'restangularEtag',
-      selfLink: 'href',
-      get: 'get',
-      getList: 'getList',
-      put: 'put',
-      post: 'post',
-      remove: 'remove',
-      head: 'head',
-      trace: 'trace',
-      options: 'options',
-      patch: 'patch',
-      getRestangularUrl: 'getRestangularUrl',
-      getRequestedUrl: 'getRequestedUrl',
-      putElement: 'putElement',
-      addRestangularMethod: 'addRestangularMethod',
-      getParentList: 'getParentList',
-      clone: 'clone',
-      ids: 'ids',
-      httpConfig: '_$httpConfig',
-      reqParams: 'reqParams',
-      one: 'one',
-      all: 'all',
-      several: 'several',
-      oneUrl: 'oneUrl',
-      allUrl: 'allUrl',
-      customPUT: 'customPUT',
-      customPOST: 'customPOST',
-      customDELETE: 'customDELETE',
-      customGET: 'customGET',
-      customGETLIST: 'customGETLIST',
-      customOperation: 'customOperation',
-      doPUT: 'doPUT',
-      doPOST: 'doPOST',
-      doDELETE: 'doDELETE',
-      doGET: 'doGET',
-      doGETLIST: 'doGETLIST',
-      fromServer: 'fromServer',
-      withConfig: 'withConfig',
-      withHttpConfig: 'withHttpConfig',
-      singleOne: 'singleOne',
-      plain: 'plain',
-      save: 'save',
-      restangularized: 'restangularized'
-    };
+        id: 'id',
+        route: 'route',
+        parentResource: 'parentResource',
+        restangularCollection: 'restangularCollection',
+        cannonicalId: '__cannonicalId',
+        etag: 'restangularEtag',
+        selfLink: 'href',
+        get: 'get',
+        getList: 'getList',
+        put: 'put',
+        post: 'post',
+        remove: 'remove',
+        head: 'head',
+        trace: 'trace',
+        options: 'options',
+        patch: 'patch',
+        getRestangularUrl: 'getRestangularUrl',
+        getRequestedUrl: 'getRequestedUrl',
+        putElement: 'putElement',
+        addRestangularMethod: 'addRestangularMethod',
+        getParentList: 'getParentList',
+        clone: 'clone',
+        ids: 'ids',
+        httpConfig: '_$httpConfig',
+        reqParams: 'reqParams',
+        one: 'one',
+        all: 'all',
+        several: 'several',
+        oneUrl: 'oneUrl',
+        allUrl: 'allUrl',
+        customPUT: 'customPUT',
+        customPOST: 'customPOST',
+        customDELETE: 'customDELETE',
+        customGET: 'customGET',
+        customGETLIST: 'customGETLIST',
+        customOperation: 'customOperation',
+        doPUT: 'doPUT',
+        doPOST: 'doPOST',
+        doDELETE: 'doDELETE',
+        doGET: 'doGET',
+        doGETLIST: 'doGETLIST',
+        fromServer: 'fromServer',
+        withConfig: 'withConfig',
+        withHttpConfig: 'withHttpConfig',
+        singleOne: 'singleOne',
+        plain: 'plain',
+        save: 'save',
+        restangularized: 'restangularized'
+      };
     object.setRestangularFields = function(resFields) {
       config.restangularFields =
-        _.extend(config.restangularFields, resFields);
+        angular.extend(config.restangularFields, resFields);
       return this;
     };
 
@@ -214,18 +320,18 @@ restangular.provider('Restangular', function() {
     config.setFieldToElem = function(field, elem, value) {
       var properties = field.split('.');
       var idValue = elem;
-      _.each(_.initial(properties), function(prop) {
+      angular.forEach(_initial(properties), function(prop) {
         idValue[prop] = {};
         idValue = idValue[prop];
       });
-      idValue[_.last(properties)] = value;
+      idValue[_last(properties)] = value;
       return this;
     };
 
     config.getFieldFromElem = function(field, elem) {
       var properties = field.split('.');
       var idValue = elem;
-      _.each(properties, function(prop) {
+      angular.forEach(properties, function(prop) {
         if (idValue) {
           idValue = idValue[prop];
         }
@@ -243,7 +349,7 @@ restangular.provider('Restangular', function() {
     };
 
     config.isValidId = function(elemId) {
-      return '' !== elemId && !_.isUndefined(elemId) && !_.isNull(elemId);
+      return '' !== elemId && !angular.isUndefined(elemId) && elemId !== null;
     };
 
     config.setUrlToElem = function(elem, url /*, route */) {
@@ -255,7 +361,7 @@ restangular.provider('Restangular', function() {
       return config.getFieldFromElem(config.restangularFields.selfLink, elem);
     };
 
-    config.useCannonicalId = _.isUndefined(config.useCannonicalId) ? false : config.useCannonicalId;
+    config.useCannonicalId = angular.isUndefined(config.useCannonicalId) ? false : config.useCannonicalId;
     object.setUseCannonicalId = function(value) {
       config.useCannonicalId = value;
       return this;
@@ -285,7 +391,7 @@ restangular.provider('Restangular', function() {
       var interceptors = angular.copy(config.responseInterceptors);
       interceptors.push(config.defaultResponseInterceptor);
       var theData = data;
-      _.each(interceptors, function(interceptor) {
+      angular.forEach(interceptors, function(interceptor) {
         theData = interceptor(theData, operation,
           what, url, response, deferred);
       });
@@ -329,8 +435,8 @@ restangular.provider('Restangular', function() {
     config.fullRequestInterceptor = function(element, operation, path, url, headers, params, httpConfig) {
       var interceptors = angular.copy(config.requestInterceptors);
       var defaultRequest = config.defaultInterceptor(element, operation, path, url, headers, params, httpConfig);
-      return _.reduce(interceptors, function(request, interceptor) {
-        return _.extend(request, interceptor(request.element, operation,
+      return interceptors.reduce(function(request, interceptor) {
+        return angular.extend(request, interceptor(request.element, operation,
           path, url, request.headers, request.params, request.httpConfig));
       }, defaultRequest);
     };
@@ -357,8 +463,8 @@ restangular.provider('Restangular', function() {
     object.setFullRequestInterceptor = object.addFullRequestInterceptor;
 
     config.onBeforeElemRestangularized = config.onBeforeElemRestangularized || function(elem) {
-      return elem;
-    };
+        return elem;
+      };
     object.setOnBeforeElemRestangularized = function(post) {
       config.onBeforeElemRestangularized = post;
       return this;
@@ -377,22 +483,22 @@ restangular.provider('Restangular', function() {
      *
      */
     config.onElemRestangularized = config.onElemRestangularized || function(elem) {
-      return elem;
-    };
+        return elem;
+      };
     object.setOnElemRestangularized = function(post) {
       config.onElemRestangularized = post;
       return this;
     };
 
     config.shouldSaveParent = config.shouldSaveParent || function() {
-      return true;
-    };
+        return true;
+      };
     object.setParentless = function(values) {
-      if (_.isArray(values)) {
+      if (angular.isArray(values)) {
         config.shouldSaveParent = function(route) {
-          return !_.contains(values, route);
+          return !_contains(values, route);
         };
-      } else if (_.isBoolean(values)) {
+      } else if (_isBoolean(values)) {
         config.shouldSaveParent = function() {
           return !values;
         };
@@ -409,7 +515,7 @@ restangular.provider('Restangular', function() {
      *
      * By default, the suffix is null
      */
-    config.suffix = _.isUndefined(config.suffix) ? null : config.suffix;
+    config.suffix = angular.isUndefined(config.suffix) ? null : config.suffix;
     object.setRequestSuffix = function(newSuffix) {
       config.suffix = newSuffix;
       return this;
@@ -435,7 +541,7 @@ restangular.provider('Restangular', function() {
       }
 
       typeTransformers.push(function(coll, elem) {
-        if (_.isNull(isCollection) || (coll === isCollection)) {
+        if (isCollection === null || (coll === isCollection)) {
           return transformer(elem);
         }
         return elem;
@@ -459,14 +565,14 @@ restangular.provider('Restangular', function() {
       var typeTransformers = config.transformers[route];
       var changedElem = elem;
       if (typeTransformers) {
-        _.each(typeTransformers, function(transformer) {
+        angular.forEach(typeTransformers, function(transformer) {
           changedElem = transformer(isCollection, changedElem);
         });
       }
       return config.onElemRestangularized(changedElem, isCollection, route, Restangular);
     };
 
-    config.transformLocalElements = _.isUndefined(config.transformLocalElements) ?
+    config.transformLocalElements = angular.isUndefined(config.transformLocalElements) ?
       false :
       config.transformLocalElements;
 
@@ -474,7 +580,7 @@ restangular.provider('Restangular', function() {
       config.transformLocalElements = !active;
     };
 
-    config.fullResponse = _.isUndefined(config.fullResponse) ? false : config.fullResponse;
+    config.fullResponse = angular.isUndefined(config.fullResponse) ? false : config.fullResponse;
     object.setFullResponse = function(full) {
       config.fullResponse = full;
       return this;
@@ -488,15 +594,15 @@ restangular.provider('Restangular', function() {
      * Base URL Creator. Base prototype for everything related to it
      **/
 
-     var BaseCreator = function() {
-     };
+    var BaseCreator = function() {
+    };
 
-     BaseCreator.prototype.setConfig = function(config) {
-       this.config = config;
-       return this;
-     };
+    BaseCreator.prototype.setConfig = function(config) {
+      this.config = config;
+      return this;
+    };
 
-     BaseCreator.prototype.parentsArray = function(current) {
+    BaseCreator.prototype.parentsArray = function(current) {
       var parents = [];
       while(current) {
         parents.push(current);
@@ -507,20 +613,20 @@ restangular.provider('Restangular', function() {
 
     function RestangularResource(config, $http, url, configurer) {
       var resource = {};
-      _.each(_.keys(configurer), function(key) {
+      angular.forEach(_keys(configurer), function(key) {
         var value = configurer[key];
 
         // Add default parameters
-        value.params = _.extend({}, value.params, config.defaultRequestParams[value.method.toLowerCase()]);
+        value.params = angular.extend({}, value.params, config.defaultRequestParams[value.method.toLowerCase()]);
         // We don't want the ? if no params are there
-        if (_.isEmpty(value.params)) {
+        if (_isEmpty(value.params)) {
           delete value.params;
         }
 
         if (config.isSafe(value.method)) {
 
           resource[key] = function() {
-            return $http(_.extend(value, {
+            return $http(angular.extend(value, {
               url: url
             }));
           };
@@ -528,7 +634,7 @@ restangular.provider('Restangular', function() {
         } else {
 
           resource[key] = function(data) {
-            return $http(_.extend(value, {
+            return $http(angular.extend(value, {
               url: url,
               data: data
             }));
@@ -542,8 +648,8 @@ restangular.provider('Restangular', function() {
 
     BaseCreator.prototype.resource = function(current, $http, localHttpConfig, callHeaders, callParams, what, etag,operation) {
 
-      var params = _.defaults(callParams || {}, this.config.defaultRequestParams.common);
-      var headers = _.defaults(callHeaders || {}, this.config.defaultHeaders);
+      var params = angular.extend(callParams || {}, this.config.defaultRequestParams.common);
+      var headers = angular.extend(callHeaders || {}, this.config.defaultHeaders);
 
       if (etag) {
         if (!config.isSafe(operation)) {
@@ -567,7 +673,7 @@ restangular.provider('Restangular', function() {
       if (this.config.suffix &&
         url.indexOf(this.config.suffix, url.length - this.config.suffix.length) === -1 &&
         !this.config.getUrlFromElem(current)) {
-          url += this.config.suffix;
+        url += this.config.suffix;
       }
 
       current[this.config.restangularFields.httpConfig] = undefined;
@@ -575,53 +681,53 @@ restangular.provider('Restangular', function() {
       return RestangularResource(this.config, $http, url, {
         getList: this.config.withHttpValues(localHttpConfig,
           {method: 'GET',
-          params: params,
-          headers: headers}),
+            params: params,
+            headers: headers}),
 
         get: this.config.withHttpValues(localHttpConfig,
           {method: 'GET',
-          params: params,
-          headers: headers}),
+            params: params,
+            headers: headers}),
 
         jsonp: this.config.withHttpValues(localHttpConfig,
           {method: 'jsonp',
-          params: params,
-          headers: headers}),
+            params: params,
+            headers: headers}),
 
         put: this.config.withHttpValues(localHttpConfig,
           {method: 'PUT',
-          params: params,
-          headers: headers}),
+            params: params,
+            headers: headers}),
 
         post: this.config.withHttpValues(localHttpConfig,
           {method: 'POST',
-          params: params,
-          headers: headers}),
+            params: params,
+            headers: headers}),
 
         remove: this.config.withHttpValues(localHttpConfig,
           {method: 'DELETE',
-          params: params,
-          headers: headers}),
+            params: params,
+            headers: headers}),
 
         head: this.config.withHttpValues(localHttpConfig,
           {method: 'HEAD',
-          params: params,
-          headers: headers}),
+            params: params,
+            headers: headers}),
 
         trace: this.config.withHttpValues(localHttpConfig,
           {method: 'TRACE',
-          params: params,
-          headers: headers}),
+            params: params,
+            headers: headers}),
 
         options: this.config.withHttpValues(localHttpConfig,
           {method: 'OPTIONS',
-          params: params,
-          headers: headers}),
+            params: params,
+            headers: headers}),
 
         patch: this.config.withHttpValues(localHttpConfig,
           {method: 'PATCH',
-          params: params,
-          headers: headers})
+            params: params,
+            headers: headers})
       });
     };
 
@@ -629,7 +735,7 @@ restangular.provider('Restangular', function() {
      * This is the Path URL creator. It uses Path to show Hierarchy in the Rest API.
      * This means that if you have an Account that then has a set of Buildings, a URL to a building
      * would be /accounts/123/buildings/456
-    **/
+     **/
     var Path = function() {
     };
 
@@ -643,7 +749,7 @@ restangular.provider('Restangular', function() {
 
     Path.prototype.base = function(current) {
       var __this = this;
-      return  _.reduce(this.parentsArray(current), function(acum, elem) {
+      return  this.parentsArray(current).reduce(function(acum, elem) {
         var elemUrl;
         var elemSelfLink = __this.config.getUrlFromElem(elem);
         if (elemSelfLink) {
@@ -719,11 +825,11 @@ restangular.provider('Restangular', function() {
 
       function encodeUriQuery(val, pctEncodeSpaces) {
         return encodeURIComponent(val).
-                   replace(/%40/gi, '@').
-                   replace(/%3A/gi, ':').
-                   replace(/%24/g, '$').
-                   replace(/%2C/gi, ',').
-                   replace(/%20/g, (pctEncodeSpaces ? '%20' : '+'));
+          replace(/%40/gi, '@').
+          replace(/%3A/gi, ':').
+          replace(/%24/g, '$').
+          replace(/%2C/gi, ',').
+          replace(/%20/g, (pctEncodeSpaces ? '%20' : '+'));
       }
 
       if (!params) { return url + (this.config.suffix || ''); }
@@ -763,23 +869,23 @@ restangular.provider('Restangular', function() {
 
       function restangularizeBase(parent, elem, route, reqParams, fromServer) {
         elem[config.restangularFields.route] = route;
-        elem[config.restangularFields.getRestangularUrl] = _.bind(urlHandler.fetchUrl, urlHandler, elem);
-        elem[config.restangularFields.getRequestedUrl] = _.bind(urlHandler.fetchRequestedUrl, urlHandler, elem);
-        elem[config.restangularFields.addRestangularMethod] = _.bind(addRestangularMethodFunction, elem);
-        elem[config.restangularFields.clone] = _.bind(copyRestangularizedElement, elem, elem);
-        elem[config.restangularFields.reqParams] = _.isEmpty(reqParams) ? null : reqParams;
-        elem[config.restangularFields.withHttpConfig] = _.bind(withHttpConfig, elem);
-        elem[config.restangularFields.plain] = _.bind(stripRestangular, elem, elem);
+        elem[config.restangularFields.getRestangularUrl] = _bind(urlHandler.fetchUrl, urlHandler, elem);
+        elem[config.restangularFields.getRequestedUrl] = _bind(urlHandler.fetchRequestedUrl, urlHandler, elem);
+        elem[config.restangularFields.addRestangularMethod] = _bind(addRestangularMethodFunction, elem);
+        elem[config.restangularFields.clone] = _bind(copyRestangularizedElement, elem, elem);
+        elem[config.restangularFields.reqParams] = _isEmpty(reqParams) ? null : reqParams;
+        elem[config.restangularFields.withHttpConfig] = _bind(withHttpConfig, elem);
+        elem[config.restangularFields.plain] = _bind(stripRestangular, elem, elem);
 
         // Tag element as restangularized
         elem[config.restangularFields.restangularized] = true;
 
         // RequestLess connection
-        elem[config.restangularFields.one] = _.bind(one, elem, elem);
-        elem[config.restangularFields.all] = _.bind(all, elem, elem);
-        elem[config.restangularFields.several] = _.bind(several, elem, elem);
-        elem[config.restangularFields.oneUrl] = _.bind(oneUrl, elem, elem);
-        elem[config.restangularFields.allUrl] = _.bind(allUrl, elem, elem);
+        elem[config.restangularFields.one] = _bind(one, elem, elem);
+        elem[config.restangularFields.all] = _bind(all, elem, elem);
+        elem[config.restangularFields.several] = _bind(several, elem, elem);
+        elem[config.restangularFields.oneUrl] = _bind(oneUrl, elem, elem);
+        elem[config.restangularFields.allUrl] = _bind(allUrl, elem, elem);
 
         elem[config.restangularFields.fromServer] = !!fromServer;
 
@@ -787,11 +893,11 @@ restangular.provider('Restangular', function() {
           var parentId = config.getIdFromElem(parent);
           var parentUrl = config.getUrlFromElem(parent);
 
-          var restangularFieldsForParent = _.union(
-            _.values( _.pick(config.restangularFields, ['route', 'singleOne', 'parentResource']) ),
+          var restangularFieldsForParent = _union(
+            _values( _pick(config.restangularFields, ['route', 'singleOne', 'parentResource']) ),
             config.extraFields
           );
-          var parentResource = _.pick(parent, restangularFieldsForParent);
+          var parentResource = _pick(parent, restangularFieldsForParent);
 
           if (config.isValidId(parentId)) {
             config.setIdToElem(parentResource, parentId, route);
@@ -809,12 +915,12 @@ restangular.provider('Restangular', function() {
 
       function one(parent, route, id, singleOne) {
         var error;
-        if (_.isNumber(route) || _.isNumber(parent)) {
+        if (angular.isNumber(route) || angular.isNumber(parent)) {
           error = 'You\'re creating a Restangular entity with the number ';
           error += 'instead of the route or the parent. For example, you can\'t call .one(12).';
           throw new Error(error);
         }
-        if (_.isUndefined(route)) {
+        if (angular.isUndefined(route)) {
           error = 'You\'re creating a Restangular entity either without the path. ';
           error += 'For example you can\'t call .one(). Please check if your arguments are valid.';
           throw new Error(error);
@@ -856,11 +962,11 @@ restangular.provider('Restangular', function() {
       }
       // Promises
       function restangularizePromise(promise, isCollection, valueToFill) {
-        promise.call = _.bind(promiseCall, promise);
-        promise.get = _.bind(promiseGet, promise);
+        promise.call = _bind(promiseCall, promise);
+        promise.get = _bind(promiseGet, promise);
         promise[config.restangularFields.restangularCollection] = isCollection;
         if (isCollection) {
-            promise.push = _.bind(promiseCall, promise, 'push');
+          promise.push = _bind(promiseCall, promise, 'push');
         }
         promise.$object = valueToFill;
         if (config.restangularizePromiseInterceptor) {
@@ -894,11 +1000,11 @@ restangular.provider('Restangular', function() {
       }
 
       function resolvePromise(deferred, response, data, filledValue) {
-        _.extend(filledValue, data);
+        angular.extend(filledValue, data);
 
         // Trigger the full response interceptor.
         if (config.fullResponse) {
-          return deferred.resolve(_.extend(response, {
+          return deferred.resolve(angular.extend(response, {
             data: data
           }));
         } else {
@@ -909,21 +1015,21 @@ restangular.provider('Restangular', function() {
 
       // Elements
       function stripRestangular(elem) {
-        if (_.isArray(elem)) {
+        if (angular.isArray(elem)) {
           var array = [];
-          _.each(elem, function(value) {
-              array.push(config.isRestangularized(value) ?  stripRestangular(value) : value);
+          angular.forEach(elem, function(value) {
+            array.push(config.isRestangularized(value) ?  stripRestangular(value) : value);
           });
           return array;
         } else {
-          return _.omit(elem, _.values(_.omit(config.restangularFields, 'id')));
+          return _omit(elem, _values(_omit(config.restangularFields, ['id'])));
         }
       }
 
       function addCustomOperation(elem) {
-        elem[config.restangularFields.customOperation] = _.bind(customFunction, elem);
-        _.each(['put', 'post', 'get', 'delete'], function(oper) {
-          _.each(['do', 'custom'], function(alias) {
+        elem[config.restangularFields.customOperation] = _bind(customFunction, elem);
+        angular.forEach(['put', 'post', 'get', 'delete'], function(oper) {
+          angular.forEach(['do', 'custom'], function(alias) {
             var callOperation = oper === 'delete' ? 'remove' : oper;
             var name = alias + oper.toUpperCase();
             var callFunction;
@@ -932,20 +1038,20 @@ restangular.provider('Restangular', function() {
               callFunction = customFunction;
             } else {
               callFunction = function(operation, elem, path, params, headers) {
-                return _.bind(customFunction, this)(operation, path, params, headers, elem);
+                return _bind(customFunction, this)(operation, path, params, headers, elem);
               };
             }
-            elem[name] = _.bind(callFunction, elem, callOperation);
+            elem[name] = _bind(callFunction, elem, callOperation);
           });
         });
-        elem[config.restangularFields.customGETLIST] = _.bind(fetchFunction, elem);
+        elem[config.restangularFields.customGETLIST] = _bind(fetchFunction, elem);
         elem[config.restangularFields.doGETLIST] = elem[config.restangularFields.customGETLIST];
       }
 
       function copyRestangularizedElement(fromElement, toElement) {
         var copiedElement = angular.copy(fromElement, toElement);
         return restangularizeElem(copiedElement[config.restangularFields.parentResource],
-                copiedElement, copiedElement[config.restangularFields.route], true);
+          copiedElement, copiedElement[config.restangularFields.route], true);
       }
 
       function restangularizeElem(parent, element, route, fromServer, collection, reqParams) {
@@ -964,16 +1070,16 @@ restangular.provider('Restangular', function() {
         }
 
         localElem[config.restangularFields.restangularCollection] = false;
-        localElem[config.restangularFields.get] = _.bind(getFunction, localElem);
-        localElem[config.restangularFields.getList] = _.bind(fetchFunction, localElem);
-        localElem[config.restangularFields.put] = _.bind(putFunction, localElem);
-        localElem[config.restangularFields.post] = _.bind(postFunction, localElem);
-        localElem[config.restangularFields.remove] = _.bind(deleteFunction, localElem);
-        localElem[config.restangularFields.head] = _.bind(headFunction, localElem);
-        localElem[config.restangularFields.trace] = _.bind(traceFunction, localElem);
-        localElem[config.restangularFields.options] = _.bind(optionsFunction, localElem);
-        localElem[config.restangularFields.patch] = _.bind(patchFunction, localElem);
-        localElem[config.restangularFields.save] = _.bind(save, localElem);
+        localElem[config.restangularFields.get] = _bind(getFunction, localElem);
+        localElem[config.restangularFields.getList] = _bind(fetchFunction, localElem);
+        localElem[config.restangularFields.put] = _bind(putFunction, localElem);
+        localElem[config.restangularFields.post] = _bind(postFunction, localElem);
+        localElem[config.restangularFields.remove] = _bind(deleteFunction, localElem);
+        localElem[config.restangularFields.head] = _bind(headFunction, localElem);
+        localElem[config.restangularFields.trace] = _bind(traceFunction, localElem);
+        localElem[config.restangularFields.options] = _bind(optionsFunction, localElem);
+        localElem[config.restangularFields.patch] = _bind(patchFunction, localElem);
+        localElem[config.restangularFields.save] = _bind(save, localElem);
 
         addCustomOperation(localElem);
         return config.transformElem(localElem, false, route, service, true);
@@ -984,15 +1090,15 @@ restangular.provider('Restangular', function() {
 
         var localElem = restangularizeBase(parent, elem, route, reqParams, fromServer);
         localElem[config.restangularFields.restangularCollection] = true;
-        localElem[config.restangularFields.post] = _.bind(postFunction, localElem, null);
-        localElem[config.restangularFields.remove] = _.bind(deleteFunction, localElem);
-        localElem[config.restangularFields.head] = _.bind(headFunction, localElem);
-        localElem[config.restangularFields.trace] = _.bind(traceFunction, localElem);
-        localElem[config.restangularFields.putElement] = _.bind(putElementFunction, localElem);
-        localElem[config.restangularFields.options] = _.bind(optionsFunction, localElem);
-        localElem[config.restangularFields.patch] = _.bind(patchFunction, localElem);
-        localElem[config.restangularFields.get] = _.bind(getById, localElem);
-        localElem[config.restangularFields.getList] = _.bind(fetchFunction, localElem, null);
+        localElem[config.restangularFields.post] = _bind(postFunction, localElem, null);
+        localElem[config.restangularFields.remove] = _bind(deleteFunction, localElem);
+        localElem[config.restangularFields.head] = _bind(headFunction, localElem);
+        localElem[config.restangularFields.trace] = _bind(traceFunction, localElem);
+        localElem[config.restangularFields.putElement] = _bind(putElementFunction, localElem);
+        localElem[config.restangularFields.options] = _bind(optionsFunction, localElem);
+        localElem[config.restangularFields.patch] = _bind(patchFunction, localElem);
+        localElem[config.restangularFields.get] = _bind(getById, localElem);
+        localElem[config.restangularFields.getList] = _bind(fetchFunction, localElem, null);
 
         addCustomOperation(localElem);
         return config.transformElem(localElem, true, route, service, true);
@@ -1000,7 +1106,7 @@ restangular.provider('Restangular', function() {
 
       function restangularizeCollectionAndElements(parent, element, route) {
         var collection = restangularizeCollection(parent, element, route, false);
-        _.each(collection, function(elem) {
+        angular.forEach(collection, function(elem) {
           restangularizeElem(parent, elem, route, false);
         });
         return collection;
@@ -1046,7 +1152,7 @@ restangular.provider('Restangular', function() {
         var whatFetched = what || __this[config.restangularFields.route];
 
         var request = config.fullRequestInterceptor(null, operation,
-            whatFetched, url, headers || {}, reqParams || {}, this[config.restangularFields.httpConfig] || {});
+          whatFetched, url, headers || {}, reqParams || {}, this[config.restangularFields.httpConfig] || {});
 
         var filledArray = [];
         filledArray = config.transformElem(filledArray, true, whatFetched, service);
@@ -1063,13 +1169,13 @@ restangular.provider('Restangular', function() {
           var data = parseResponse(resData, operation, whatFetched, url, response, deferred);
 
           // support empty response for getList() calls (some APIs respond with 204 and empty body)
-          if (_.isUndefined(data) || '' === data) {
+          if (angular.isUndefined(data) || '' === data) {
             data = [];
           }
-          if (!_.isArray(data)) {
+          if (!angular.isArray(data)) {
             throw new Error('Response for getList SHOULD be an array and not an object or something else');
           }
-          var processedData = _.map(data, function(elem) {
+          var processedData = data.map(function(elem) {
             if (!__this[config.restangularFields.restangularCollection]) {
               return restangularizeElem(__this, elem, what, true, data);
             } else {
@@ -1078,7 +1184,7 @@ restangular.provider('Restangular', function() {
             }
           });
 
-          processedData = _.extend(data, processedData);
+          processedData = angular.extend(data, processedData);
 
           if (!__this[config.restangularFields.restangularCollection]) {
             resolvePromise(
@@ -1110,10 +1216,10 @@ restangular.provider('Restangular', function() {
         };
 
         urlHandler.resource(this, $http, request.httpConfig, request.headers, request.params, what,
-                this[config.restangularFields.etag], operation)[method]().then(okCallback, function error(response) {
+          this[config.restangularFields.etag], operation)[method]().then(okCallback, function error(response) {
           if (response.status === 304 && __this[config.restangularFields.restangularCollection]) {
             resolvePromise(deferred, response, __this, filledArray);
-          } else if ( _.every(config.errorInterceptors, function(cb) { return cb(response, deferred, okCallback) !== false; }) ) {
+          } else if ( _every(config.errorInterceptors, function(cb) { return cb(response, deferred, okCallback) !== false; }) ) {
             // triggered if no callback returns false
             deferred.reject(response);
           }
@@ -1131,7 +1237,7 @@ restangular.provider('Restangular', function() {
         if (this[config.restangularFields.fromServer]) {
           return this[config.restangularFields.put](params, headers);
         } else {
-          return _.bind(elemFunction, this)('post', undefined, params, undefined, headers);
+          return _bind(elemFunction, this)('post', undefined, params, undefined, headers);
         }
       }
 
@@ -1146,7 +1252,7 @@ restangular.provider('Restangular', function() {
         // fallback to etag on restangular object (since for custom methods we probably don't explicitly specify the etag field)
         var etag = callObj[config.restangularFields.etag] || (operation !== 'post' ? this[config.restangularFields.etag] : null);
 
-        if (_.isObject(callObj) && config.isRestangularized(callObj)) {
+        if (angular.isObject(callObj) && config.isRestangularized(callObj)) {
           callObj = stripRestangular(callObj);
         }
         var request = config.fullRequestInterceptor(callObj, operation, route, fetchUrl,
@@ -1193,18 +1299,18 @@ restangular.provider('Restangular', function() {
         var errorCallback = function(response) {
           if (response.status === 304 && config.isSafe(operation)) {
             resolvePromise(deferred, response, __this, filledObject);
-          } else if ( _.every(config.errorInterceptors, function(cb) { return cb(response, deferred, okCallback) !== false; }) ) {
+          } else if ( _every(config.errorInterceptors, function(cb) { return cb(response, deferred, okCallback) !== false; }) ) {
             // triggered if no callback returns false
             deferred.reject(response);
           }
         };
         // Overriding HTTP Method
         var callOperation = operation;
-        var callHeaders = _.extend({}, request.headers);
+        var callHeaders = angular.extend({}, request.headers);
         var isOverrideOperation = config.isOverridenMethod(operation);
         if (isOverrideOperation) {
           callOperation = 'post';
-          callHeaders = _.extend(callHeaders, {'X-HTTP-Method-Override': operation === 'remove' ? 'DELETE' : operation.toUpperCase()});
+          callHeaders = angular.extend(callHeaders, {'X-HTTP-Method-Override': operation === 'remove' ? 'DELETE' : operation.toUpperCase()});
         } else if (config.jsonp && callOperation === 'get') {
           callOperation = 'jsonp';
         }
@@ -1226,51 +1332,51 @@ restangular.provider('Restangular', function() {
       }
 
       function getFunction(params, headers) {
-        return _.bind(elemFunction, this)('get', undefined, params, undefined, headers);
+        return _bind(elemFunction, this)('get', undefined, params, undefined, headers);
       }
 
       function deleteFunction(params, headers) {
-        return _.bind(elemFunction, this)('remove', undefined, params, undefined, headers);
+        return _bind(elemFunction, this)('remove', undefined, params, undefined, headers);
       }
 
       function putFunction(params, headers) {
-        return _.bind(elemFunction, this)('put', undefined, params, undefined, headers);
+        return _bind(elemFunction, this)('put', undefined, params, undefined, headers);
       }
 
       function postFunction(what, elem, params, headers) {
-        return _.bind(elemFunction, this)('post', what, params, elem, headers);
+        return _bind(elemFunction, this)('post', what, params, elem, headers);
       }
 
       function headFunction(params, headers) {
-        return _.bind(elemFunction, this)('head', undefined, params, undefined, headers);
+        return _bind(elemFunction, this)('head', undefined, params, undefined, headers);
       }
 
       function traceFunction(params, headers) {
-        return _.bind(elemFunction, this)('trace', undefined, params, undefined, headers);
+        return _bind(elemFunction, this)('trace', undefined, params, undefined, headers);
       }
 
       function optionsFunction(params, headers) {
-        return _.bind(elemFunction, this)('options', undefined, params, undefined, headers);
+        return _bind(elemFunction, this)('options', undefined, params, undefined, headers);
       }
 
       function patchFunction(elem, params, headers) {
-        return _.bind(elemFunction, this)('patch', undefined, params, elem, headers);
+        return _bind(elemFunction, this)('patch', undefined, params, elem, headers);
       }
 
       function customFunction(operation, path, params, headers, elem) {
-        return _.bind(elemFunction, this)(operation, path, params, elem, headers);
+        return _bind(elemFunction, this)(operation, path, params, elem, headers);
       }
 
       function addRestangularMethodFunction(name, operation, path, defaultParams, defaultHeaders, defaultElem) {
         var bindedFunction;
         if (operation === 'getList') {
-          bindedFunction = _.bind(fetchFunction, this, path);
+          bindedFunction = _bind(fetchFunction, this, path);
         } else {
-          bindedFunction = _.bind(customFunction, this, operation, path);
+          bindedFunction = _bind(customFunction, this, operation, path);
         }
 
         var createdFunction = function(params, headers, elem) {
-          var callParams = _.defaults({
+          var callParams = angular.extend({
             params: params,
             headers: headers,
             elem: elem
@@ -1292,24 +1398,24 @@ restangular.provider('Restangular', function() {
       }
 
       function withConfigurationFunction(configurer) {
-        var newConfig = angular.copy(_.omit(config, 'configuration'));
+        var newConfig = angular.copy(_omit(config, ['configuration']));
         Configurer.init(newConfig, newConfig);
         configurer(newConfig);
         return createServiceForConfiguration(newConfig);
       }
 
       function toService(route, parent) {
-        var knownCollectionMethods = _.values(config.restangularFields);
+        var knownCollectionMethods = _values(config.restangularFields);
         var serv = {};
         var collection = (parent || service).all(route);
-        serv.one = _.bind(one, (parent || service), parent, route);
-        serv.post = _.bind(collection.post, collection);
-        serv.getList = _.bind(collection.getList, collection);
-        serv.withHttpConfig = _.bind(withHttpConfig, collection);
+        serv.one = _bind(one, (parent || service), parent, route);
+        serv.post = _bind(collection.post, collection);
+        serv.getList = _bind(collection.getList, collection);
+        serv.withHttpConfig = _bind(withHttpConfig, collection);
 
         for (var prop in collection) {
-          if (collection.hasOwnProperty(prop) && _.isFunction(collection[prop]) && !_.contains(knownCollectionMethods, prop)) {
-            serv[prop] = _.bind(collection[prop], collection);
+          if (collection.hasOwnProperty(prop) && angular.isFunction(collection[prop]) && !_contains(knownCollectionMethods, prop)) {
+            serv[prop] = _bind(collection[prop], collection);
           }
         }
 
@@ -1319,27 +1425,27 @@ restangular.provider('Restangular', function() {
 
       Configurer.init(service, config);
 
-      service.copy = _.bind(copyRestangularizedElement, service);
+      service.copy = _bind(copyRestangularizedElement, service);
 
-      service.service = _.bind(toService, service);
+      service.service = _bind(toService, service);
 
-      service.withConfig = _.bind(withConfigurationFunction, service);
+      service.withConfig = _bind(withConfigurationFunction, service);
 
-      service.one = _.bind(one, service, null);
+      service.one = _bind(one, service, null);
 
-      service.all = _.bind(all, service, null);
+      service.all = _bind(all, service, null);
 
-      service.several = _.bind(several, service, null);
+      service.several = _bind(several, service, null);
 
-      service.oneUrl = _.bind(oneUrl, service, null);
+      service.oneUrl = _bind(oneUrl, service, null);
 
-      service.allUrl = _.bind(allUrl, service, null);
+      service.allUrl = _bind(allUrl, service, null);
 
-      service.stripRestangular = _.bind(stripRestangular, service);
+      service.stripRestangular = _bind(stripRestangular, service);
 
-      service.restangularizeElement = _.bind(restangularizeElem, service);
+      service.restangularizeElement = _bind(restangularizeElem, service);
 
-      service.restangularizeCollection = _.bind(restangularizeCollectionAndElements, service);
+      service.restangularizeCollection = _bind(restangularizeCollectionAndElements, service);
 
       return service;
     }
