@@ -6,4 +6,4 @@ Changes in my fork:
 
 * Easy usable via NPM
 * Removed underscore / lodash dependancy
-* Added `withHttpConfig` to Restangular as-a-service usage
+* Added `get`, `all` and `withHttpConfig` to Restangular as-a-service usage

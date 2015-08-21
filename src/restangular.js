@@ -1411,7 +1411,9 @@ restangular.provider('Restangular', function() {
         serv.one = _bind(one, (parent || service), parent, route);
         serv.post = _bind(collection.post, collection);
         serv.getList = _bind(collection.getList, collection);
-        serv.withHttpConfig = _bind(withHttpConfig, collection);
+        serv.get = _bind(collection.get, collection);
+        serv.all = _bind(collection.all, collection);
+        serv.withHttpConfig = _bind(collection.withHttpConfig, collection);
 
         for (var prop in collection) {
           if (collection.hasOwnProperty(prop) && angular.isFunction(collection[prop]) && !_contains(knownCollectionMethods, prop)) {
