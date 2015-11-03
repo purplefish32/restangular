@@ -1305,9 +1305,9 @@ restangular.provider('Restangular', function() {
         serv.one = _.bind(one, (parent || service), parent, route);
         serv.post = _.bind(collection.post, collection);
         serv.getList = _.bind(collection.getList, collection);
-        serv.get = _bind(collection.get, collection);
-        serv.all = _bind(collection.all, collection);
-        serv.withHttpConfig = _bind(collection.withHttpConfig, collection);
+        serv.get = _.bind(collection.get, collection);
+        serv.all = _.bind(collection.all, collection);
+        serv.withHttpConfig = _.bind(collection.withHttpConfig, collection);
 
         for (var prop in collection) {
           if (collection.hasOwnProperty(prop) && _.isFunction(collection[prop]) && !_.contains(knownCollectionMethods, prop)) {
