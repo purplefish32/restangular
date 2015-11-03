@@ -1,5 +1,5 @@
 {
-  "name": "restangular",
+  "name": "purplefish32-restangular",
   "description": "Restful Resources service for AngularJS apps",
   "version": "1.7.0",
   "filename": "restangular.min.js",
@@ -8,7 +8,7 @@
   "author": "Martin Gontovnikas <martin@gon.to>",
   "repository": {
     "type": "git",
-    "url": "git://github.com/mgonto/restangular.git"
+    "url": "git@github.com:purplefish32/restangular.git"
   },
   "engines": {
     "node": ">= 0.9"
